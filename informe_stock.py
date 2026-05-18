@@ -244,6 +244,21 @@ def cargar_todos_los_lotes():
     dfs = [cargar_lotes(h) for h in HOJAS_PRODUCTO]
     return pd.concat([d for d in dfs if not d.empty], ignore_index=True)
 
+@st.cache_data
+def cargar_expedicion_detalle():
+    raw = pd.read_excel(ARCHIVO, sheet_name="stock expedicion", header=None)
+    # detectar fila de encabezado: primera fila con al menos 4 celdas no nulas
+    header_row = 0
+    for i, row in raw.iterrows():
+        if row.notna().sum() >= 4:
+            header_row = i
+            break
+    df = pd.read_excel(ARCHIVO, sheet_name="stock expedicion", header=header_row)
+    df.columns = df.columns.astype(str).str.strip()
+    df = df.dropna(how="all")
+    # la columna H es el índice 7 dentro de las columnas del df
+    return df.reset_index(drop=True)
+
 MAPA_KEYWORDS = {
     "jamon parma":     ["parma"],
     "jamon iberico":   ["iberico"],
@@ -337,6 +352,40 @@ elif tab == 1:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<div class="card-title">Productos disponibles en expedición</div>', unsafe_allow_html=True)
         st.dataframe(df_e_show, width="stretch", hide_index=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # ── Detalle ────────────────────────────────────────────────────────────────
+    sac.divider(label="Detalle", icon="table", color="#555")
+    df_mis = cargar_expedicion_detalle()
+
+    if df_mis.empty:
+        sac.result(label="Sin datos", description="No se encontraron datos en la hoja de expedición.", status="info")
+    else:
+        buscar_mis = st.text_input("🔍 Buscar producto", placeholder="Escribí parte del nombre...", key="buscar_mis", label_visibility="collapsed")
+
+        # columna H = posición 7 dentro del dataframe
+        col_h_idx = 7
+        col_h_name = df_mis.columns[col_h_idx] if len(df_mis.columns) > col_h_idx else None
+
+        df_mis_filtered = df_mis.copy()
+        if buscar_mis:
+            # buscar en todas las columnas de texto
+            mask = df_mis_filtered.apply(
+                lambda col: col.astype(str).str.contains(buscar_mis, case=False, na=False)
+            ).any(axis=1)
+            df_mis_filtered = df_mis_filtered[mask]
+
+        def resaltar_vida_util(row):
+            if col_h_name:
+                val = pd.to_numeric(row[col_h_name], errors="coerce")
+                if pd.notna(val) and val < 80:
+                    return ["background-color: #e87722; color: #fff; font-weight: 600"] * len(row)
+            return [""] * len(row)
+
+        styled = df_mis_filtered.style.apply(resaltar_vida_util, axis=1)
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown(f'<div class="card-title">Stock expedición · <span style="color:#e87722">naranja</span> = vida útil &lt; 80%</div>', unsafe_allow_html=True)
+        st.dataframe(styled, width="stretch", hide_index=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
