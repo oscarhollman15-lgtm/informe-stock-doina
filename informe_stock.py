@@ -277,10 +277,6 @@ def encontrar_hoja(nombre_resumen):
     return None
 
 # ── Carga ─────────────────────────────────────────────────────────────────────
-if st.sidebar.button("🔄 Recargar datos"):
-    st.cache_data.clear()
-    st.rerun()
-
 df_res   = cargar_resumen_stock()
 df_lotes = cargar_todos_los_lotes()
 hoy      = pd.Timestamp.today().normalize()
@@ -299,6 +295,10 @@ st.markdown(f"""
   <div class="header-badge">📅 Actualizado al {fecha_str}</div>
 </div>
 """, unsafe_allow_html=True)
+
+if st.button("🔄 Recargar datos", help="Limpia el cache y recarga el Excel"):
+    st.cache_data.clear()
+    st.rerun()
 
 # ── Navegación principal con antd ─────────────────────────────────────────────
 tab = sac.tabs([
