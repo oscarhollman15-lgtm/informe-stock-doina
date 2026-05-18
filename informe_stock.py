@@ -277,6 +277,10 @@ def encontrar_hoja(nombre_resumen):
     return None
 
 # ── Carga ─────────────────────────────────────────────────────────────────────
+if st.sidebar.button("🔄 Recargar datos"):
+    st.cache_data.clear()
+    st.rerun()
+
 df_res   = cargar_resumen_stock()
 df_lotes = cargar_todos_los_lotes()
 hoy      = pd.Timestamp.today().normalize()
