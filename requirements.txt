@@ -4,3 +4,4 @@ streamlit
 streamlit-extras
 streamlit-antd-components
 matplotlib
+requests
